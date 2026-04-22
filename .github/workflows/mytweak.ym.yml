@@ -1,0 +1,34 @@
+name: Build Tweak
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: brew install ldid dpkg xz
+
+      - name: Setup Theos and iOS SDK
+        run: |
+          git clone --recursive https://github.com/theos/theos.git ${{ github.workspace }}/theos
+          rm -rf ${{ github.workspace }}/theos/sdks
+          git clone https://github.com/theos/sdks.git ${{ github.workspace }}/theos/sdks
+          # 👇 추가된 핵심 코드: 유튜브 전용 부품(설계도) 다운로드!
+          git clone https://github.com/PoomSmart/YouTubeHeader.git ${{ github.workspace }}/theos/include/YouTubeHeader
+
+      - name: Build Package
+        run: |
+          export THEOS=${{ github.workspace }}/theos
+          make clean
+          make package FINALPACKAGE=1
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YTVideoOverlay-Package
+          path: packages/*.deb
